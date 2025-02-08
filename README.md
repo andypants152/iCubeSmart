@@ -40,15 +40,9 @@ Initially I followed Sciily's 3D8RGB Build instructions, but have it working in 
 
 8) Select Arduino: Upload with the cube with boot0:1 boot1:0. Only the blue LED should light on the yellow board if it is ready to flash the main memory.
 
-9) Open the Serial Monitor at baud 115200 to see the live status of the buttons.
+9) Open the Serial Monitor at baud 115200 to see the live status of the keys.
 
 
 ## Current Issues
 
-I've not had much luck deciphering the schematics provided by iCubeSmart and have been finding keys1-7 by trial and error. I got key6 working and key5 stopped 😖
-
-The current ino here will show the status of key1-4,6
-
-No Lights work. some flash at power up? 
-
-I'm waiting for either the orignal firmware or a better schematic from iCubeSmart.
+Only the onboard red/green lights work, and none of the cube.
