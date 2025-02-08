@@ -1,7 +1,7 @@
 /*
  * Initial Firmware Test
  *
- *    Key's 1-7 now working!
+ *    Key's 1-7 and SW1/2 now working!
  *
  */
 
@@ -22,6 +22,10 @@
 #define Key6 PA13 // Cycle
 #define Key7 PA11 // On-Off
 
+// Onboard Switchs
+#define SW1 PA1
+#define SW2 PC3
+
 // Instance of Serial used for UART:
 HardwareSerial Serial1(RX, TX);
 
@@ -33,6 +37,9 @@ int key4Pressed = 0;
 int key5Pressed = 0;
 int key6Pressed = 0;
 int key7Pressed = 0;
+
+int switch1 = 0;
+int switch2 = 0;
 
 void setup()
 {
@@ -53,10 +60,9 @@ void setup()
   pinMode(Key6, INPUT_PULLUP);
   pinMode(Key7, INPUT_PULLUP);
 
-  // Initialize IR receiver
-  pinMode(IR_RECEIVER_PIN, INPUT);
-    
-
+  // Switches
+  pinMode(SW1, INPUT_PULLUP);
+  pinMode(SW2, INPUT_PULLUP);
 
   // Open serial port and listen @ 115200 bps:
   Serial1.begin(115200);
@@ -72,12 +78,18 @@ void loop()
   key6Pressed = digitalRead(Key6) == LOW;
   key7Pressed = digitalRead(Key7) == LOW;
 
-  Serial1.print("Key1: " + String(key1Pressed) + "\t");
-  Serial1.print("Key2: " + String(key2Pressed) + "\t");
-  Serial1.print("Key3: " + String(key3Pressed) + "\t");
-  Serial1.print("Key4: " + String(key4Pressed) + "\t");
-  Serial1.print("Key5: " + String(key5Pressed) + "\t");
-  Serial1.print("Key6: " + String(key6Pressed) + "\t");
-  Serial1.println("Key7: " + String(key7Pressed) + "\t");
+  switch1 = digitalRead(SW1) == HIGH;
+  switch2 = digitalRead(SW2) == HIGH;
+
+
+  // Serial1.print("Key1: " + String(key1Pressed) + "\t");
+  // Serial1.print("Key2: " + String(key2Pressed) + "\t");
+  // Serial1.print("Key3: " + String(key3Pressed) + "\t");
+  // Serial1.print("Key4: " + String(key4Pressed) + "\t");
+  // Serial1.print("Key5: " + String(key5Pressed) + "\t");
+  // Serial1.print("Key6: " + String(key6Pressed) + "\t");
+  // Serial1.println("Key7: " + String(key7Pressed) + "\t");
+  Serial1.print("SW1: " + String(switch1) + "\t");
+  Serial1.println("SW2: " + String(switch2) + "\t");
 
 }
