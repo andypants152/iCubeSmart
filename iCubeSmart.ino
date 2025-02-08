@@ -27,17 +27,17 @@
 #define SW2 PC3
 
 // Shift Register (MBI5024):
-#define SPI_Clock     PA5     // SPI Clock - Clock input terminal for data shift
-#define SPI_MOSI      PA7     // SPI MOSI - Serial-data input to the shift register
-#define LE            PC4     // LE - Data strobe input terminal (latch pin)
-#define OE            PC5     // OE - Output enable terminal
+#define SPI_Clock PA5 // SPI Clock - Clock input terminal for data shift
+#define SPI_MOSI PA7  // SPI MOSI - Serial-data input to the shift register
+#define LE PC4        // LE - Data strobe input terminal (latch pin)
+#define OE PC5        // OE - Output enable terminal
 
 // Demultiplexer (74HC154):
-#define DEMUX_A       PB0
-#define DEMUX_B       PB1
-#define DEMUX_C       PB10
-#define DEMUX_D       PB11
-#define DEMUX_ENABLE  PA8        // Enable Pin
+#define DEMUX_A PB0
+#define DEMUX_B PB1
+#define DEMUX_C PB10
+#define DEMUX_D PB11
+#define DEMUX_ENABLE PA8 // Enable Pin
 
 // Instance of Serial used for UART:
 HardwareSerial Serial1(RX, TX);
@@ -53,58 +53,6 @@ int key7Pressed = 0;
 
 int switch1 = 0;
 int switch2 = 0;
-
-const int colorDepth = 2;
-
-// Height of cube (Z-Axis):
-const int height = 8;
-
-// Number of rows front-to-back (Y-Axis):
-const int yAxisRows = 8;
-
-// Number of primary colors: Red, Green, Blue:
-const int primaryColors = 3;
-
-// The Y-Axis is responsible for lighting up different primary colors (in this case, 24 states):
-const int yAxisStates = primaryColors * yAxisRows;
-
-/* Contains the max value each Serial read should store (consisting of 2x color layers +
- *  1 byte prepended corresponding to color depth to update):
- */
-const byte numBytes = yAxisStates * height + 1;
-byte receivedBytes[numBytes]; // Array that holds incoming data to paint the cube.
-boolean newData = false; // Controls whether incoming data has finished being read.
-byte header[] = {0x00, 0xFF, 0x00, 0x00}; // The header used to delineate incoming data.
-
-int targetColorDepth = 0; // Contains the destination color layer that is to be rendered.
-
-// The Cube, represented by a multidimensional array of bytes (each byte lighting up an X-Axis row of LEDs).
-/*
- * If a byte is set to 0, the entire row is off.
- * If a byte is 1, the leftmost LED is on.
- * If a byte is 255, the entire row is on.
- */
-byte cube[colorDepth][height][yAxisStates] =
-{{
-// G  G  B  B  R  R  G  G  B  B  R  R  G  G  B  B  R  R  G  G  B  B  R  R
-{0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255}, // Red
-{0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255}, // Red+Yellow
-{255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255}, // Yellow
-{255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0}, // Green
-{255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0}, // Cyan
-{0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0}, // Blue
-{0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255}, // Magenta
-{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}, // White
-},{
-{0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255}, // Red
-{255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255}, // Yellow+Red
-{255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255}, // Yellow
-{255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0}, // Green
-{255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0}, // Cyan
-{0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 255, 0, 0}, // Blue
-{0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 255, 255}, // Magenta
-{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}, // White
-}};
 
 void setup()
 {
@@ -135,7 +83,7 @@ void setup()
   pinMode(LE, OUTPUT);
   pinMode(OE, OUTPUT);
 
-  // Initialize demultiplexer which handles the layer that is being grounded 
+  // Initialize demultiplexer which handles the layer that is being grounded
   pinMode(DEMUX_A, OUTPUT);
   pinMode(DEMUX_B, OUTPUT);
   pinMode(DEMUX_C, OUTPUT);
@@ -146,14 +94,48 @@ void setup()
   Serial1.begin(115200);
 }
 
-void clearCurrentLayer() {
-  digitalWrite(LE, LOW);
-  for (int i = 0; i < yAxisStates; i++) 
-    shiftOut(SPI_MOSI, SPI_Clock, LSBFIRST, 0);
-  digitalWrite(LE, HIGH);
+void clearCurrentLayer()
+{
+  digitalWrite(OE, HIGH);  // Disable output while shifting data
+  digitalWrite(LE, LOW);   // Keep latch low until data is fully sent
+
+  // Send 192 bits (12 MBI5024s × 16 bits each)
+  for (int chip = 0; chip < 12; chip++) {
+    uint16_t data = 0x0000; // All LEDs off (MBI5024 is active-low)
+    
+    for (int i = 15; i >= 0; i--) { // Shift 16 bits per chip
+      digitalWrite(SPI_Clock, LOW);
+      digitalWrite(SPI_MOSI, (data & (1 << i)) ? HIGH : LOW);
+      digitalWrite(SPI_Clock, HIGH);
+    }
+  }
+
+  digitalWrite(LE, HIGH);  // Latch data to outputs
+  digitalWrite(LE, LOW);   // Reset latch
+  digitalWrite(OE, LOW);   // Enable output
 }
 
-void switchToLayerZ(int z) {
+void paintCurrentLayer(uint16_t data[12]) {
+  digitalWrite(OE, HIGH);  // Disable output while shifting data
+  digitalWrite(LE, LOW);   // Keep latch low until data is fully sent
+
+  // Shift out 12 x 16-bit values (MSB first)
+  for (int chip = 11; chip >= 0; chip--) { // Start from last chip to first
+    for (int i = 15; i >= 0; i--) { // MSB first
+      digitalWrite(SPI_Clock, LOW);
+      digitalWrite(SPI_MOSI, (data[chip] & (1 << i)) ? HIGH : LOW);
+      digitalWrite(SPI_Clock, HIGH);
+    }
+  }
+
+  digitalWrite(LE, HIGH);  // Latch data to outputs
+  delayMicroseconds(1);    // Short delay for stability
+  digitalWrite(LE, LOW);
+  digitalWrite(OE, LOW);   // Enable output
+}
+
+void switchToLayerZ(int z)
+{
   z = z & 0x1F;
   digitalWrite(DEMUX_A, z & 1);
   digitalWrite(DEMUX_B, (z >> 1) & 1);
@@ -161,64 +143,10 @@ void switchToLayerZ(int z) {
   digitalWrite(DEMUX_D, (z >> 3) & 1);
 }
 
-void readIncomingBytes() {
-  static boolean recvInProgress = false;  // Controls whether the cube is currently receiving data.
-  static byte ndx = 0;                    // Index of current incoming byte.
-  int triggerStart = 0;                   // Keeps track of whether the entire header was read from Serial.
-  byte rb;                                // Current byte being read from Serial.
-
-  while (Serial1.available() > 0 && newData == false) {
-      rb = Serial1.read();
-      if (recvInProgress == true) {
-          if (ndx < numBytes - 1) {
-              receivedBytes[ndx] = rb;
-              ndx++;
-              if (ndx >= numBytes) ndx = numBytes - 1;
-          } else if (ndx == numBytes - 1) {
-              receivedBytes[ndx] = rb;
-              recvInProgress = false;
-              ndx = 0;
-              newData = true;
-          }
-      } else if (rb == header[triggerStart] && triggerStart == sizeof(header)) {
-        recvInProgress = true;
-        triggerStart = 0;
-      } else if (rb == header[triggerStart] && triggerStart < sizeof(header)) {
-        triggerStart++;
-        if (triggerStart == sizeof(header)) {
-          recvInProgress = true;
-          triggerStart = 0;
-        }
-      } else {
-        triggerStart = 0;
-      }
-  }
-}
-
-// Paints the entire cube whatever value is given (0 - 255):
-void paintCube(int value) {
-  for (int c = 0; c < colorDepth; c++) {
-    for (int z = 0; z < height; z++) {
-      for (int y = 0; y < yAxisStates; y++) {
-        cube[c][z][y] = value;
-      }
-    }
-  }
-}
-
-// Function to randomize the cube values
-void randomizeCube() {
-    for (int color = 0; color < colorDepth; ++color) {
-        for (int heightIdx = 0; heightIdx < height; ++heightIdx) {
-            for (int yAxis = 0; yAxis < yAxisStates; ++yAxis) {
-                cube[color][heightIdx][yAxis] = rand() % 256; // Random value between 0 and 255
-            }
-        }
-    }
-}
-
 void loop()
 {
+  static uint8_t lastKeyState = 0;
+  uint8_t currentKeyState = 0;
   key1Pressed = digitalRead(Key1) == LOW;
   key2Pressed = digitalRead(Key2) == LOW;
   key3Pressed = digitalRead(Key3) == LOW;
@@ -227,11 +155,25 @@ void loop()
   key6Pressed = digitalRead(Key6) == LOW;
   key7Pressed = digitalRead(Key7) == LOW;
 
+  // Combine key states into a single byte for easy comparison
+  currentKeyState = key1Pressed | key2Pressed << 1 | key3Pressed << 2 |
+                    key4Pressed << 3 | key5Pressed << 4 | key6Pressed << 5 |
+                    key7Pressed << 6;
+
   switch1 = digitalRead(SW1) == HIGH;
   switch2 = digitalRead(SW2) == HIGH;
 
-  renderCube();
-  readAndUpdateCube();
+  uint8_t color = 255;
+  // Detect key press (any key pressed that wasn’t pressed before)
+  if (currentKeyState && currentKeyState != lastKeyState) {
+    color = (color + 1) % 256; // Cycle through colors 0 to 255
+  }
+
+  lastKeyState = currentKeyState;
+uint16_t testPattern[12] = {0x0002, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000,
+                            0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000};
+
+paintCurrentLayer(testPattern);
 
   // Serial1.print("Key1: " + String(key1Pressed) + "\t");
   // Serial1.print("Key2: " + String(key2Pressed) + "\t");
@@ -242,41 +184,4 @@ void loop()
   // Serial1.println("Key7: " + String(key7Pressed) + "\t");
   // Serial1.print("SW1: " + String(switch1) + "\t");
   // Serial1.println("SW2: " + String(switch2) + "\t");
-
-}
-
-void renderCube() {
-  // Loop through color depth and Z-axis layers
-  for (int c = 0; c < colorDepth; c++) {
-    for (int z = 0; z < height; z++) {
-      clearCurrentLayer();
-      switchToLayerZ(z);
-      digitalWrite(LE, LOW);
-      
-      // Render each Y-axis layer
-      for (int y = 0; y < yAxisStates; y++) {
-        // Render each X-axis byte-layer
-        shiftOut(SPI_MOSI, SPI_Clock, LSBFIRST, cube[c][z][y]);
-      }
-      digitalWrite(LE, HIGH);
-    }
-  }
-}
-
-void readAndUpdateCube() {
-  readIncomingBytes();
-  if (newData) {
-    targetColorDepth = receivedBytes[0];
-    updateCubeWithNewData();
-    newData = false;
-  }
-}
-
-void updateCubeWithNewData() {
-  // Update the cube with the received bytes
-  for (int z = 0; z < height; z++) {
-    for (int y = 0; y < yAxisStates; y++) {
-      cube[targetColorDepth][z][y] = receivedBytes[z * 24 + y + 1];
-    }
-  }
 }
