@@ -43,6 +43,20 @@
 // Instance of Serial used for UART:
 HardwareSerial Serial1(RX, TX);
 
+// Timer for controlling the cube refresh rate
+HardwareTimer *timer = nullptr;
+
+// Frame rate (e.g., 60 Hz)
+const uint32_t FRAME_RATE = 500;                      // Frames per second
+const uint32_t TIMER_INTERVAL = 1000000 / FRAME_RATE; // Interval in microseconds
+
+// Current layer being displayed
+int currentLayer = 0;
+
+// Function prototypes
+void renderCube();
+void timerCallback();
+
 // Retains the state of different buttons being pressed:
 bool key1Pressed = false;
 bool key2Pressed = false;
@@ -69,8 +83,18 @@ struct Voxel
 #define CUBE_WIDTH 8
 #define CUBE_DEPTH 8
 #define CUBE_HEIGHT 8
+#define COLOR_DEPTH 4
+volatile uint8_t pwmPhase = 0;
 
 uint8_t cube[CUBE_WIDTH][CUBE_DEPTH][CUBE_HEIGHT][3];
+
+bool shouldLightVoxel(byte brightness, uint8_t pwmCounter)
+{
+  // Scale 8-bit brightness (0–255) to 4-bit (0–15)
+  uint8_t scaledBrightness = brightness >> 4;
+  // Turn the LED on only if the scaled brightness is greater than the current PWM counter
+  return scaledBrightness > pwmCounter;
+}
 
 void initializeCube()
 {
@@ -88,7 +112,7 @@ void initializeCube()
   }
 }
 
-void setVoxel(byte x, byte y, byte z, bool r, bool g, bool b)
+void setVoxel(byte x, byte y, byte z, byte r, byte g, byte b)
 {
   if (x < CUBE_WIDTH && y < CUBE_DEPTH && z < CUBE_HEIGHT)
   {
@@ -101,48 +125,6 @@ void setVoxel(byte x, byte y, byte z, bool r, bool g, bool b)
 void clearVoxel(byte x, byte y, byte z)
 {
   setVoxel(x, y, z, 0, 0, 0);
-}
-
-void renderCube()
-{
-  for (int z = 0; z < CUBE_HEIGHT; z++)
-  {
-    switchToLayerZ(z); // Switch to the current layer
-
-    uint16_t layerData[12] = {0}; // Initialize layer data
-
-    // Pack the voxel data into the layerData array
-    for (int x = 0; x < CUBE_WIDTH; x++)
-    {
-      for (int y = 0; y < CUBE_DEPTH; y++)
-      {
-        int ledIndex = y + (7 - x) * 8;
-        int chip = ledIndex / 16; // which register (0-3)
-        int bit = ledIndex % 16;  // which bit in that register
-
-        bool r = cube[x][y][z][0];
-        bool g = cube[x][y][z][1];
-        bool b = cube[x][y][z][2];
-
-        // Pack the RGB values into the layerData array
-        if (r)
-        {
-          layerData[chip] |= (1 << bit); // Red channel occupies chips 0-3
-        }
-        if (b)
-        {
-          layerData[chip + 4] |= (1 << bit); // Green channel occupies chips 4-7
-        }
-        if (g)
-        {
-          layerData[chip + 8] |= (1 << bit); // Blue channel occupies chips 8-11
-        }
-      }
-    }
-
-    paintCurrentLayer(layerData); // Send the data to the shift registers
-    delay(1000);
-  }
 }
 
 void setup()
@@ -185,6 +167,13 @@ void setup()
   Serial1.begin(115200);
 
   initializeCube();
+
+  // Initialize the timer
+  timer = new HardwareTimer(TIM2);                     // Use TIM2 (or any available timer)
+  timer->setPrescaleFactor(1);                         // No prescaling
+  timer->setOverflow(TIMER_INTERVAL, MICROSEC_FORMAT); // Set interval in microseconds
+  timer->attachInterrupt(timerCallback);               // Attach the interrupt handler
+  timer->resume();                                     // Start the timer
 }
 
 void clearCurrentLayer()
@@ -253,21 +242,11 @@ void loop()
   switch1 = digitalRead(SW1) == HIGH;
   switch2 = digitalRead(SW2) == HIGH;
 
-  // uint16_t testPattern[12] = {0x0003, 0x0000, 0x0000, 0xFFFF,
-  //                             0x0001, 0x0001, 0x0000, 0x0000,
-  //                             0x0001, 0x0000, 0x0001, 0x0000};
-
-  // paintCurrentLayer(testPattern);
-
   // // Example: Set some voxels
-  setVoxel(0, 0, 5, 1, 0, 0); // Should be LED 56 (Red)
-  setVoxel(7, 0, 6, 0, 1, 0); // Should be LED 0 (Green)
-  setVoxel(0, 7, 0, 0, 0, 1); // Should be LED 63 (Blue)
-  setVoxel(7, 7, 7, 1, 1, 1); // Should be LED 7 (White)
-
-  // // Render the cube
-  renderCube();
-  delay(1000);
+  setVoxel(0, 0, 5, 128, 0, 0);     // Pink?
+  setVoxel(4, 3, 6, 255, 255, 0);   // yellow
+  setVoxel(4, 3, 0, 0, 255, 255);   // Cyan
+  setVoxel(7, 7, 7, 255, 255, 255); // White
 
   Serial1.print("Key1: " + String(key1Pressed) + "\t");
   Serial1.print("Key2: " + String(key2Pressed) + "\t");
@@ -278,4 +257,71 @@ void loop()
   Serial1.println("Key7: " + String(key7Pressed) + "\t");
   Serial1.print("SW1: " + String(switch1) + "\t");
   Serial1.println("SW2: " + String(switch2) + "\t");
+  delay(100);
+}
+
+void timerCallback()
+{
+  // Call renderCube() on every timer interrupt
+  renderCube();
+}
+
+void renderCube()
+{
+  // Clear the current layer
+  clearCurrentLayer();
+
+  // Switch to the next layer
+  switchToLayerZ(currentLayer);
+
+  // Render the current layer
+  uint16_t layerData[12] = {0}; // Initialize layer data
+
+  uint8_t pwmCounter = pwmPhase;
+
+  // Pack the voxel data into the layerData array
+  for (int x = 0; x < CUBE_WIDTH; x++)
+  {
+    for (int y = 0; y < CUBE_DEPTH; y++)
+    {
+      int ledIndex = y + (7 - x) * 8;
+      int chip = ledIndex / 16; // which register (0-3)
+      int bit = ledIndex % 16;  // which bit in that register
+
+      byte r = cube[x][y][currentLayer][0];
+      byte g = cube[x][y][currentLayer][1];
+      byte b = cube[x][y][currentLayer][2];
+
+      // Apply dithering
+      bool rOn = shouldLightVoxel(r, pwmCounter);
+      bool gOn = shouldLightVoxel(g, pwmCounter);
+      bool bOn = shouldLightVoxel(b, pwmCounter);
+
+      // Pack the RGB values into the layerData array
+      if (rOn)
+      {
+        layerData[chip] |= (1 << bit); // Red channel occupies chips 0-3
+      }
+      if (bOn)
+      {
+        layerData[chip + 4] |= (1 << bit); // Green channel occupies chips 4-7
+      }
+      if (gOn)
+      {
+        layerData[chip + 8] |= (1 << bit); // Blue channel occupies chips 8-11
+      }
+    }
+  }
+
+  paintCurrentLayer(layerData); // Send the data to the shift registers
+
+  // Move to the next layer
+  currentLayer = (currentLayer + 1) % CUBE_HEIGHT;
+
+  // When we've completed a full sweep (back to layer 0),
+  // update the PWM phase for the next full cycle.
+  if (currentLayer == 0)
+  {
+    pwmPhase = (pwmPhase + 1) & 0x0F; // cycle through 0-15
+  }
 }
