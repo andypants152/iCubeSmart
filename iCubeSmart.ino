@@ -83,18 +83,7 @@ struct Voxel
 #define CUBE_WIDTH 8
 #define CUBE_DEPTH 8
 #define CUBE_HEIGHT 8
-#define COLOR_DEPTH 4
-volatile uint8_t pwmPhase = 0;
-
 uint8_t cube[CUBE_WIDTH][CUBE_DEPTH][CUBE_HEIGHT][3];
-
-bool shouldLightVoxel(byte brightness, uint8_t pwmCounter)
-{
-  // Scale 8-bit brightness (0–255) to 4-bit (0–15)
-  uint8_t scaledBrightness = brightness >> 4;
-  // Turn the LED on only if the scaled brightness is greater than the current PWM counter
-  return scaledBrightness > pwmCounter;
-}
 
 void initializeCube()
 {
@@ -243,10 +232,10 @@ void loop()
   switch2 = digitalRead(SW2) == HIGH;
 
   // // Example: Set some voxels
-  setVoxel(0, 0, 5, 128, 0, 0);     // Pink?
-  setVoxel(4, 3, 6, 255, 255, 0);   // yellow
-  setVoxel(4, 3, 0, 0, 255, 255);   // Cyan
-  setVoxel(7, 7, 7, 255, 255, 255); // White
+  setVoxel(0, 0, 5, 1, 0, 0);   // Red
+  setVoxel(4, 3, 6, 1, 1, 0);   // yellow
+  setVoxel(4, 3, 0, 0, 1, 1);   // Cyan
+  setVoxel(7, 7, 7, 1, 1, 1);   // White
 
   Serial1.print("Key1: " + String(key1Pressed) + "\t");
   Serial1.print("Key2: " + String(key2Pressed) + "\t");
@@ -277,8 +266,6 @@ void renderCube()
   // Render the current layer
   uint16_t layerData[12] = {0}; // Initialize layer data
 
-  uint8_t pwmCounter = pwmPhase;
-
   // Pack the voxel data into the layerData array
   for (int x = 0; x < CUBE_WIDTH; x++)
   {
@@ -292,21 +279,16 @@ void renderCube()
       byte g = cube[x][y][currentLayer][1];
       byte b = cube[x][y][currentLayer][2];
 
-      // Apply dithering
-      bool rOn = shouldLightVoxel(r, pwmCounter);
-      bool gOn = shouldLightVoxel(g, pwmCounter);
-      bool bOn = shouldLightVoxel(b, pwmCounter);
-
       // Pack the RGB values into the layerData array
-      if (rOn)
+      if (r)
       {
         layerData[chip] |= (1 << bit); // Red channel occupies chips 0-3
       }
-      if (bOn)
+      if (b)
       {
         layerData[chip + 4] |= (1 << bit); // Green channel occupies chips 4-7
       }
-      if (gOn)
+      if (g)
       {
         layerData[chip + 8] |= (1 << bit); // Blue channel occupies chips 8-11
       }
@@ -318,10 +300,4 @@ void renderCube()
   // Move to the next layer
   currentLayer = (currentLayer + 1) % CUBE_HEIGHT;
 
-  // When we've completed a full sweep (back to layer 0),
-  // update the PWM phase for the next full cycle.
-  if (currentLayer == 0)
-  {
-    pwmPhase = (pwmPhase + 1) & 0x0F; // cycle through 0-15
-  }
 }
