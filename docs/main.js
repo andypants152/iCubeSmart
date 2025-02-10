@@ -64,7 +64,7 @@ function processSerialData(data) {
     line = line.trim();
     if (line !== "") {
       // Split the line into fields based on whitespace.
-      const fields = line.split(/\s+/);
+      const fields = line.split("\t");
       fields.forEach(field => {
         // Each field should be in the form "KeyX:" or "SWY:" followed by the value.
         const parts = field.split(":");
