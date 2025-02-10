@@ -1,6 +1,6 @@
-// app.js
+// main.js
 document.addEventListener("DOMContentLoaded", () => {
-// Attach a click handler to the "Connect" button.
+// Attach a click handler to the "Connect" button after the site has loaded
 document.getElementById("connect-button").addEventListener("click", async () => {
     await connectSerial();
   });
@@ -45,33 +45,48 @@ document.getElementById("connect-button").addEventListener("click", async () => 
     }
   }
   
-  // Function to process and parse incoming serial data.
-  function processSerialData(data) {
-    // Split the incoming data into lines (in case multiple lines come in).
-    const lines = data.split("\n");
-    lines.forEach(line => {
-      if (line.trim() !== "") {
-        // Example line:
-        // "Key1: true	Key2: false	Key3: true	Key4: false	Key5: false	Key6: true	Key7: false"
-        // "SW1: true	SW2: false"
-        // We'll split by whitespace (tabs or spaces) to get each key-value pair.
-        const fields = line.split(/\s+/);
-        fields.forEach(field => {
-          // Each field should be in the form "KeyX:" or "SWY:" followed by the value.
-          const parts = field.split(":");
-          if (parts.length === 2) {
-            const key = parts[0].trim();
-            const value = parts[1].trim();
-            // If there's an element with this key as its ID, update its content.
-            const element = document.getElementById(key);
-            if (element) {
-              element.textContent = value;
-            } else {
-              console.log(`No element found for key: ${key}`);
-            }
+// Global buffer to accumulate incoming data
+let serialBuffer = "";
+
+// Function to process serial data from the Web Serial API.
+function processSerialData(data) {
+  // Append the new data to our buffer.
+  serialBuffer += data;
+  
+  // Split the buffer by newline characters.
+  const lines = serialBuffer.split("\n");
+  
+  // The last element may be an incomplete line, so save it back to the buffer.
+  serialBuffer = lines.pop();
+  
+  // Process each complete line.
+  lines.forEach(line => {
+    line = line.trim();
+    if (line !== "") {
+      // Split the line into fields based on whitespace.
+      const fields = line.split(/\s+/);
+      fields.forEach(field => {
+        // Each field should be in the form "KeyX:" or "SWY:" followed by the value.
+        const parts = field.split(":");
+        if (parts.length === 2) {
+          const key = parts[0].trim();
+          let value = parts[1].trim();
+          
+          // Convert "0" and "1" to boolean text if desired.
+          if (value === "0" || value === "1") {
+            value = (value === "1") ? "true" : "false";
           }
-        });
-      }
-    });
-  }
+          
+          // Update the corresponding DOM element if it exists.
+          const element = document.getElementById(key);
+          if (element) {
+            element.textContent = value;
+          } else {
+            console.log(`No element found for key: ${key}`);
+          }
+        }
+      });
+    }
+  });
+}
 });  
