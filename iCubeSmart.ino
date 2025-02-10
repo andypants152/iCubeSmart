@@ -219,6 +219,62 @@ void switchToLayerZ(int z)
   digitalWrite(DEMUX_D, (z >> 3) & 1);
 }
 
+// void receiveCubeData()
+// {
+//   static bool receiving = false;
+//   static int index = 0;
+//   static uint8_t buffer[CUBE_WIDTH * CUBE_DEPTH * CUBE_HEIGHT * 3];
+  
+//   while (Serial1.available())
+//   {
+//     uint8_t data = Serial1.read();
+    
+//     if (!receiving)
+//     {
+//       if (data == 0xAA) // Start byte
+//       {
+//         receiving = true;
+//         index = 0;
+//       }
+//     }
+//     else
+//     {
+//       if (data == 0x55) // End byte
+//       {
+//         if (index == CUBE_WIDTH * CUBE_DEPTH * CUBE_HEIGHT * 3)
+//         {
+//           // Copy buffer to cube
+//           int i = 0;
+//           for (int x = 0; x < CUBE_WIDTH; x++)
+//           {
+//             for (int y = 0; y < CUBE_DEPTH; y++)
+//             {
+//               for (int z = 0; z < CUBE_HEIGHT; z++)
+//               {
+//                 cube[x][y][z][0] = buffer[i++]; // Red
+//                 cube[x][y][z][1] = buffer[i++]; // Green
+//                 cube[x][y][z][2] = buffer[i++]; // Blue
+//               }
+//             }
+//           }
+//         }
+//         receiving = false;
+//       }
+//       else
+//       {
+//         if (index < CUBE_WIDTH * CUBE_DEPTH * CUBE_HEIGHT * 3)
+//         {
+//           buffer[index++] = data;
+//         }
+//         else
+//         {
+//           receiving = false; // Reset if out of bounds
+//         }
+//       }
+//     }
+//   }
+// }
+
 void loop()
 {
   key1Pressed = digitalRead(Key1) == LOW;
@@ -247,6 +303,8 @@ void loop()
   Serial1.print("SW1: " + String(switch1) + "\t");
   Serial1.println("SW2: " + String(switch2) + "\t");
   delay(100);
+  // receiveCubeData(); // Continuously check for incoming data
+
 }
 
 void timerCallback()
