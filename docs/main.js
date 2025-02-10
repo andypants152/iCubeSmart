@@ -1,5 +1,5 @@
 // app.js
-
+document.addEventListener("DOMContentLoaded", () => {
 // Attach a click handler to the "Connect" button.
 document.getElementById("connect-button").addEventListener("click", async () => {
     await connectSerial();
@@ -74,4 +74,4 @@ document.getElementById("connect-button").addEventListener("click", async () => 
       }
     });
   }
-  
+});  
