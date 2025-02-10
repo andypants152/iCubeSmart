@@ -2,7 +2,7 @@
  *
  *    Open Source iCubeSmart 3D8RGB LED Cube Firmware
  *
- *      8X8X8 Configuration
+ *      8X8X8 Configuration 3-bit color
  *
  */
 
