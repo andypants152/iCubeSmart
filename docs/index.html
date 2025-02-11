@@ -1,42 +1,48 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="styles.css">
-    <!--The Magic! (ಠ_ಠ)━☆ﾟ.*･｡ﾟ -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
     <title>🚨🚨🚨</title>
-    <script src="main.js"></script>
+    <!-- Import map for Three.js and Material Web components -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@v0.173.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.173.0/examples/jsm/",
+          "@material/web/": "https://esm.run/@material/web/"
+        }
+      }
+    </script>
+    <script type="module">
+        import '@material/web/all.js';
+        import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+    
+        document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+      </script>
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <h1 class="md-typescale-display-medium">LED Cube Controller</h1>
+    <div id="threejs-container"></div>
+    <form>
 
-</head>
-<body>
+    <!-- Replace regular buttons with Material Web buttons -->
+    <md-filled-button id="connect-btn"><div class="pulse"><span class="material-symbols-outlined">usb</span>Connect</div></md-filled-button>
+    <md-outlined-button id="send-btn">Send</md-outlined-button>
+    <md-outlined-button id="read-cube-btn">Read Cube</md-outlined-button>
+</form>
 
-    <body>
-        <h1>LED Cube Controller</h1>
-        <button id="connect-button">Connect to Cube</button>
-      
-        <h2>Button States</h2>
-        <div id="button-status">
-          <p>Key1: <span id="Key1">-</span></p>
-          <p>Key2: <span id="Key2">-</span></p>
-          <p>Key3: <span id="Key3">-</span></p>
-          <p>Key4: <span id="Key4">-</span></p>
-          <p>Key5: <span id="Key5">-</span></p>
-          <p>Key6: <span id="Key6">-</span></p>
-          <p>Key7: <span id="Key7">-</span></p>
-          <p>SW1:  <span id="SW1">-</span></p>
-          <p>SW2:  <span id="SW2">-</span></p>
-        </div>
-
-        
-    <!--Message for unsupported browsers (┛✧Д✧))┛彡┻━┻-->
+    <!-- Message for unsupported browsers -->
     <noscript>
-        <p>
-            Your browser does not support the HTML5 Canvas element. <br>
-            (╯°□°）╯︵ ┻━┻) <br>
-            Please consider updating your browser to enjoy the
-            full functionality of this website.
-        </p>
+      <p>
+        Your browser does not support the HTML5 Canvas element. <br />
+        (╯°□°）╯︵ ┻━┻ <br />
+        Please consider updating your browser to enjoy the full functionality of this website.
+      </p>
     </noscript>
-</body>
-</html>   
+  </body>
+</html>
