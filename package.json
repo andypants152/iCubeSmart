@@ -1,0 +1,28 @@
+{
+  "name": "icubecontrol",
+  "version": "0.0.1",
+  "description": "3D8RGB Controller",
+  "main": "main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andypants152/iCubeSmart.git"
+  },
+  "author": "AndyPants",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/andypants152/iCubeSmart/issues"
+  },
+  "homepage": "https://github.com/andypants152/iCubeSmart#readme",
+  "devDependencies": {
+    "parcel": "^2.13.3"
+  },
+  "dependencies": {
+    "three": "^0.173.0"
+  }
+}

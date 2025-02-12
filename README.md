@@ -6,7 +6,7 @@ Open Source iCubeSmart 3D8RGB LED Cube Firmware
 
 I started by trying to use [Sliicy's 8x8x8-LED Project](https://github.com/Sliicy/8x8x8-LED/) 
 However my motherboard is a later  version than Sliicy, that supports up to 32 layers instead of 8.
-At present I have figured out the required signal for individual control of the LEDs, but need to implement the scanning technique to get the whole cube to appear to illuminate; as only one layer of 8x8 LEDs is actually powered at a time.
+iCubeSmart does not have the original "bootloader" or source code available; just a dotnet app for control of the firmware shipped with the kit. [Kit on Amazon](https://a.co/d/c1vPxGl)
 
 ## Setup VS Code
 
@@ -30,7 +30,7 @@ At present I have figured out the required signal for individual control of the 
 
 5) Open the ino, this will trigger the andrino extension to analyze the code.
 
-6) Arduino Board Configuration:
+6) Arduino Board Configuration: *if you pull this repo the .vscode folder should pull these settings
     In the extensions board manager set:
         Board: Generic STM32F1 Series
         Board Part Number: Generic F103RETx
@@ -40,4 +40,6 @@ At present I have figured out the required signal for individual control of the 
 
 8) Select Arduino: Upload with the cube with boot0:1 boot1:0. Only the blue LED should light on the yellow board if it is ready to flash the main memory.
 
-9) Open the Serial Monitor at baud 115200 to see the live status of the keys.
+The cube should now light the 7 colors available in the corners of the cube!
+
+#WIP

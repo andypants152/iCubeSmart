@@ -1,10 +1,10 @@
 /*
- *  Open Source iCubeSmart 3D8RGB LED Cube Firmware (OOP Version - TOP SPEED SPI MODE)
+ *  Open Source iCubeSmart 3D8RGB LED Cube Firmware
  *
  *  8×8×8 Configuration, 3-bit color, refactored for OOP.
+ * 
  */
 
-// Uncomment the next line to enable TOP_SPEED_MODE (which uses hardware SPI)
 //#define TOP_SPEED_MODE
 
 
@@ -43,7 +43,7 @@ HardwareSerial Serial1(RX, TX);
 #ifdef TOP_SPEED_MODE
 // In TOP_SPEED mode with SPI, we aim to shift out 192 bits as quickly as possible.
 // We set the timer overflow to roughly 8 µs per layer.
-const uint32_t TIMER_INTERVAL = 1000; // microseconds
+const uint32_t TIMER_INTERVAL = 2000; // microseconds
 #else
 // For normal operation, use a lower frame rate.
 const uint32_t FRAME_RATE = 500;                      // Frames per second (each layer update)
@@ -268,11 +268,15 @@ void setup()
 void loop()
 {
   // Example test pattern: update a few voxels.
-  cube.setVoxel(0, 0, 5, 1, 0, 0); // Red
-  cube.setVoxel(4, 3, 6, 1, 1, 0); // Yellow (red + green)
-  cube.setVoxel(4, 3, 0, 0, 1, 1); // Cyan (green + blue)
+  cube.setVoxel(0, 0, 0, 0, 0, 0); // "Black"
+  cube.setVoxel(7, 0, 0, 1, 0, 0); // "Red"
+  cube.setVoxel(0, 7, 0, 0, 1, 0); // "Green"
+  cube.setVoxel(0, 0, 7, 0, 0, 1); // "Blue"
+  cube.setVoxel(7, 0, 7, 1, 0, 1); // Magenta (Red + Blue)
+  cube.setVoxel(7, 7, 0, 1, 1, 0); // Yellow (red + green)
+  cube.setVoxel(0, 7, 7, 0, 1, 1); // Cyan (green + blue)
   cube.setVoxel(7, 7, 7, 1, 1, 1); // White (all channels)
 
   // (Optional) Output button/switch status or other debug info here.
-  delay(100);
+  delay(10000);
 }
