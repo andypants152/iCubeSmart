@@ -232,10 +232,14 @@ void loop()
   switch2 = digitalRead(SW2) == HIGH;
 
   // // Example: Set some voxels
-  setVoxel(0, 0, 5, 1, 0, 0);   // Red
-  setVoxel(4, 3, 6, 1, 1, 0);   // yellow
-  setVoxel(4, 3, 0, 0, 1, 1);   // Cyan
-  setVoxel(7, 7, 7, 1, 1, 1);   // White
+  setVoxel(0, 0, 0, 0, 0, 0); // "Black"
+  setVoxel(7, 0, 0, 1, 0, 0); // "Red"
+  setVoxel(0, 7, 0, 0, 1, 0); // "Green"
+  setVoxel(0, 0, 7, 0, 0, 1); // "Blue"
+  setVoxel(7, 0, 7, 1, 0, 1); // Magenta (Red + Blue)
+  setVoxel(7, 7, 0, 1, 1, 0); // Yellow (red + green)
+  setVoxel(0, 7, 7, 0, 1, 1); // Cyan (green + blue)
+  setVoxel(7, 7, 7, 1, 1, 1); // White (all channels)
 
   Serial1.print("Key1: " + String(key1Pressed) + "\t");
   Serial1.print("Key2: " + String(key2Pressed) + "\t");
