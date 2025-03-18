@@ -40,9 +40,21 @@
 // Instance of Serial used for UART:
 HardwareSerial Serial1(RX, TX);
 
+// Retains the state of different buttons being pressed:
+bool key1Pressed = false;
+bool key2Pressed = false;
+bool key3Pressed = false;
+bool key4Pressed = false;
+bool key5Pressed = false;
+bool key6Pressed = false;
+bool key7Pressed = false;
+
+bool switch1 = false;
+bool switch2 = false;
+
 #ifdef TOP_SPEED_MODE
 // In TOP_SPEED mode with SPI, we aim to shift out 192 bits as quickly as possible.
-// We set the timer overflow to roughly 8 µs per layer.
+// We set the timer overflow to roughly 8 µs per render for dimmest and 2000 for brightest (i cant remember the math reason for the upper limit).
 const uint32_t TIMER_INTERVAL = 2000; // microseconds
 #else
 // For normal operation, use a lower frame rate.
@@ -267,6 +279,16 @@ void setup()
 ///////////////////////////////////////////////////////////////////////////////
 void loop()
 {
+  key1Pressed = digitalRead(Key1) == LOW;
+  key2Pressed = digitalRead(Key2) == LOW;
+  key3Pressed = digitalRead(Key3) == LOW;
+  key4Pressed = digitalRead(Key4) == LOW;
+  key5Pressed = digitalRead(Key5) == LOW;
+  key6Pressed = digitalRead(Key6) == LOW;
+  key7Pressed = digitalRead(Key7) == LOW;
+  switch1 = digitalRead(SW1) == HIGH;
+  switch2 = digitalRead(SW2) == HIGH;
+
   // Example test pattern: update a few voxels.
   cube.setVoxel(0, 0, 0, 0, 0, 0); // "Black"
   cube.setVoxel(7, 0, 0, 1, 0, 0); // "Red"
@@ -277,6 +299,15 @@ void loop()
   cube.setVoxel(0, 7, 7, 0, 1, 1); // Cyan (green + blue)
   cube.setVoxel(7, 7, 7, 1, 1, 1); // White (all channels)
 
-  // (Optional) Output button/switch status or other debug info here.
-  delay(10000);
+  // Output button/switch status or other debug info here.
+  Serial1.print("Key1: " + String(key1Pressed) + "\t");
+  Serial1.print("Key2: " + String(key2Pressed) + "\t");
+  Serial1.print("Key3: " + String(key3Pressed) + "\t");
+  Serial1.print("Key4: " + String(key4Pressed) + "\t");
+  Serial1.print("Key5: " + String(key5Pressed) + "\t");
+  Serial1.print("Key6: " + String(key6Pressed) + "\t");
+  Serial1.println("Key7: " + String(key7Pressed) + "\t");
+  Serial1.print("SW1: " + String(switch1) + "\t");
+  Serial1.println("SW2: " + String(switch2) + "\t");
+  delay(100);
 }

@@ -2,5 +2,5 @@
     "sketch": "iCubeSmart.ino",
     "configuration": "pnum=GENERIC_F103RETX,upload_method=serialMethod,xserial=generic,usb=none,xusb=FS,opt=osstd,dbg=none,rtlib=nano",
     "board": "STMicroelectronics:stm32:GenF1",
-    "port": "COM4"
+    "port": "COM3"
 }
