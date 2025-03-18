@@ -54,7 +54,9 @@ bool switch2 = false;
 
 #ifdef TOP_SPEED_MODE
 // In TOP_SPEED mode with SPI, we aim to shift out 192 bits as quickly as possible.
-// We set the timer overflow to roughly 8 µs per render for dimmest and 2000 for brightest (i cant remember the math reason for the upper limit).
+// We set the timer overflow to roughly 8 µs per render for dimmest and 2000 for brightest 
+//(i cant remember the math reason for the upper limit).
+//1 microsecond per layer lower limit. 
 const uint32_t TIMER_INTERVAL = 2000; // microseconds
 #else
 // For normal operation, use a lower frame rate.
