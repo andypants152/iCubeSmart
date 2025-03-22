@@ -2,11 +2,10 @@
  *  Open Source iCubeSmart 3D8RGB LED Cube Firmware
  *
  *  8×8×8 Configuration, 3-bit color, refactored for OOP.
- * 
+ *
  */
 
-//#define TOP_SPEED_MODE
-
+// #define TOP_SPEED_MODE
 
 // Pin definitions (unchanged)
 #define LED_Red PB8
@@ -54,17 +53,23 @@ bool switch2 = false;
 
 #ifdef TOP_SPEED_MODE
 // In TOP_SPEED mode with SPI, we aim to shift out 192 bits as quickly as possible.
-// We set the timer overflow to roughly 8 µs per render for dimmest and 2000 for brightest 
+// We set the timer overflow to roughly 8 µs per render for dimmest and 2000 for brightest
 //(i cant remember the math reason for the upper limit).
-//1 microsecond per layer lower limit. 
-const uint32_t TIMER_INTERVAL = 2000; // microseconds
+// 1 microsecond per layer lower limit.
+uint32_t timerInterval = 2000; // microseconds
 #else
 // For normal operation, use a lower frame rate.
 const uint32_t FRAME_RATE = 500;                      // Frames per second (each layer update)
-const uint32_t TIMER_INTERVAL = 1000000 / FRAME_RATE; // in microseconds
+uint32_t timerInterval = 1000000 / FRAME_RATE; // in microseconds
 #endif
 
 HardwareTimer *timer = nullptr;
+
+bool debugEnabled = false;
+
+// Buffer for incoming serial command text
+static char inputBuffer[64];
+static size_t bufIndex = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // LEDCube Class
@@ -226,6 +231,175 @@ void timerCallback()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Serial Command Processing Function
+///////////////////////////////////////////////////////////////////////////////
+void processCommand(char *cmd)
+{
+  if (cmd == nullptr)
+    return;
+
+  // Trim leading whitespace
+  char *p = cmd;
+  while (*p && isspace((unsigned char)*p))
+    p++;
+  if (*p == '\0')
+    return; // ignore empty command
+
+  // Trim trailing whitespace
+  char *endp = p + strlen(p) - 1;
+  while (endp >= p && isspace((unsigned char)*endp))
+  {
+    *endp-- = '\0';
+  }
+
+  // Command type is first non-whitespace character
+  char cmdType = tolower((unsigned char)*p);
+
+  switch (cmdType)
+  {
+  case 't':
+  { // Set Timer interval
+    uint32_t newInterval;
+    if (sscanf(p + 1, "%lu", &newInterval) == 1)
+    {
+      if (newInterval > 0)
+      {
+        timer->setOverflow(newInterval, MICROSEC_FORMAT);
+        timerInterval = newInterval;
+        Serial1.print("Timer interval set to ");
+        Serial1.print(newInterval);
+        Serial1.println(" us");
+      }
+      else
+      {
+        Serial1.println("Error: interval must be > 0");
+      }
+    }
+    else
+    {
+      Serial1.println("Usage: T <microseconds>");
+    }
+  }
+  break;
+
+  case 'v':
+  { // Set Voxel color
+    // Replace commas with spaces
+    for (char *q = p + 1; *q; ++q)
+    {
+      if (*q == ',')
+        *q = ' ';
+    }
+    int x, y, z;
+    int r, g, b;
+    int count = sscanf(p + 1, "%d %d %d %d %d %d", &x, &y, &z, &r, &g, &b);
+    if (count == 4)
+    {
+      // Format: V x y z c
+      int color = r;
+      if (color < 0)
+        color = 0;
+      if (x >= 0 && x < LEDCube::WIDTH &&
+          y >= 0 && y < LEDCube::DEPTH &&
+          z >= 0 && z < LEDCube::HEIGHT)
+      {
+        color &= 0x7;
+        byte rr = (color >> 2) & 1;
+        byte gg = (color >> 1) & 1;
+        byte bb = color & 1;
+        cube.setVoxel(x, y, z, rr, gg, bb);
+        Serial1.print("Set voxel (");
+        Serial1.print(x);
+        Serial1.print(",");
+        Serial1.print(y);
+        Serial1.print(",");
+        Serial1.print(z);
+        Serial1.print(") to color ");
+        Serial1.println(color);
+      }
+      else
+      {
+        Serial1.println("Error: voxel coordinates out of range (0-7)");
+      }
+    }
+    else if (count == 6)
+    {
+      // Format: V x y z r g b
+      if (x >= 0 && x < LEDCube::WIDTH &&
+          y >= 0 && y < LEDCube::DEPTH &&
+          z >= 0 && z < LEDCube::HEIGHT)
+      {
+        byte rr = r ? 1 : 0;
+        byte gg = g ? 1 : 0;
+        byte bb = b ? 1 : 0;
+        cube.setVoxel(x, y, z, rr, gg, bb);
+        Serial1.print("Set voxel (");
+        Serial1.print(x);
+        Serial1.print(",");
+        Serial1.print(y);
+        Serial1.print(",");
+        Serial1.print(z);
+        Serial1.print(") to RGB(");
+        Serial1.print(rr);
+        Serial1.print(",");
+        Serial1.print(gg);
+        Serial1.print(",");
+        Serial1.print(bb);
+        Serial1.println(")");
+      }
+      else
+      {
+        Serial1.println("Error: voxel coordinates out of range (0-7)");
+      }
+    }
+    else
+    {
+      Serial1.println("Usage: V x y z c  or  V x y z r g b");
+    }
+  }
+  break;
+
+  // NEW: 'D' command to toggle debug prints
+  case 'd':
+  {
+    int val;
+    // e.g. "D 1" or "D 0"
+    if (sscanf(p + 1, "%d", &val) == 1)
+    {
+      if (val == 1)
+      {
+        debugEnabled = true;
+        Serial1.println("Debug prints ENABLED.");
+      }
+      else
+      {
+        debugEnabled = false;
+        Serial1.println("Debug prints DISABLED.");
+      }
+    }
+    else
+    {
+      // If no valid param, just toggle
+      debugEnabled = !debugEnabled;
+      if (debugEnabled)
+      {
+        Serial1.println("Debug prints ENABLED.");
+      }
+      else
+      {
+        Serial1.println("Debug prints DISABLED.");
+      }
+    }
+  }
+  break;
+
+  default:
+    Serial1.print("Unknown command: ");
+    Serial1.println(p);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Setup
 ///////////////////////////////////////////////////////////////////////////////
 void setup()
@@ -251,7 +425,7 @@ void setup()
   pinMode(SW1, INPUT_PULLUP);
   pinMode(SW2, INPUT_PULLUP);
 
-  // 
+  //
   pinMode(SPI_Clock, OUTPUT);
   pinMode(SPI_MOSI, OUTPUT);
   pinMode(LE, OUTPUT);
@@ -271,7 +445,7 @@ void setup()
   // Set up the hardware timer.
   timer = new HardwareTimer(TIM2);
   timer->setPrescaleFactor(1);
-  timer->setOverflow(TIMER_INTERVAL, MICROSEC_FORMAT);
+  timer->setOverflow(timerInterval, MICROSEC_FORMAT);
   timer->attachInterrupt(timerCallback);
   timer->resume();
 }
@@ -301,15 +475,60 @@ void loop()
   cube.setVoxel(0, 7, 7, 0, 1, 1); // Cyan (green + blue)
   cube.setVoxel(7, 7, 7, 1, 1, 1); // White (all channels)
 
-  // Output button/switch status or other debug info here.
-  Serial1.print("Key1: " + String(key1Pressed) + "\t");
-  Serial1.print("Key2: " + String(key2Pressed) + "\t");
-  Serial1.print("Key3: " + String(key3Pressed) + "\t");
-  Serial1.print("Key4: " + String(key4Pressed) + "\t");
-  Serial1.print("Key5: " + String(key5Pressed) + "\t");
-  Serial1.print("Key6: " + String(key6Pressed) + "\t");
-  Serial1.println("Key7: " + String(key7Pressed) + "\t");
-  Serial1.print("SW1: " + String(switch1) + "\t");
-  Serial1.println("SW2: " + String(switch2) + "\t");
-  delay(100);
+  // Check for incoming serial data
+  while (Serial1.available())
+  {
+    char c = Serial1.read();
+    if (c == '\r' || c == '\n')
+    {
+      // End of command
+      if (bufIndex > 0)
+      {
+        inputBuffer[bufIndex] = '\0';
+        processCommand(inputBuffer);
+        bufIndex = 0;
+      }
+    }
+    else
+    {
+      // Accumulate character
+      if (bufIndex < sizeof(inputBuffer) - 1)
+      {
+        inputBuffer[bufIndex++] = c;
+      }
+      // Prevent overflow
+      if (bufIndex >= sizeof(inputBuffer) - 1)
+      {
+        bufIndex = 0; // reset if too long
+      }
+    }
+  }
+
+  // NEW: Debug prints if enabled
+  if (debugEnabled)
+  {
+    // Print button/switch status, for example
+    Serial1.print("Key1: ");
+    Serial1.print(key1Pressed);
+    Serial1.print("  Key2: ");
+    Serial1.print(key2Pressed);
+    Serial1.print("  Key3: ");
+    Serial1.print(key3Pressed);
+    Serial1.print("  Key4: ");
+    Serial1.print(key4Pressed);
+    Serial1.print("  Key5: ");
+    Serial1.print(key5Pressed);
+    Serial1.print("  Key6: ");
+    Serial1.print(key6Pressed);
+    Serial1.print("  Key7: ");
+    Serial1.println(key7Pressed);
+
+    Serial1.print("SW1: ");
+    Serial1.print(switch1);
+    Serial1.print("  SW2: ");
+    Serial1.println(switch2);
+
+    // Adjust delay or remove if it interferes with timing
+    delay(100);
+  }
 }
